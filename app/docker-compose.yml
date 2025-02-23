@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # Nginx Yük Dengeleyici
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"  # Dış port 80'i container'ın 80 portuna bağla
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro  # Nginx yapılandırma dosyasını bağla
+    depends_on:  # Bağımlılıklar
+      - app1
+      - app2
+
+  # İlk Spring Boot Uygulaması
+  app1:
+    build: .  # Dockerfile'dan build et
+    environment:  # Ortam değişkenleri
+      - SERVER_PORT=8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=appdb
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+
+  # İkinci Spring Boot Uygulaması (Replikasyon)
+  app2:
+    build: .  # app1 ile aynı yapılandırma
+    environment:
+      - SERVER_PORT=8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=appdb
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - postgres
+      - redis
+
+  # PostgreSQL Veritabanı
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_DB=appdb
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data  # Kalıcı veri depolama
+
+  # Redis Cache
+  redis:
+    image: redis:latest
+    volumes:
+      - redis_data:/data  # Kalıcı veri depolama
+
+volumes:  # Kalıcı veri depolama birimleri
+  postgres_data:
+  redis_data: 
